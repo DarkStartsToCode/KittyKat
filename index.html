@@ -1,206 +1,290 @@
-<div id="gatekeeper" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; color:white; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-    <h1>PRIVATE ACCESS</h1>
-    <input type="password" id="passInput" placeholder="Enter Code">
-    <button onclick="checkPass()">ENTER</button>
-</div>
-
-<script>
-    function checkPass() {
-        let code = document.getElementById("passInput").value;
-        if (code === "YOURCODEHERE") {
-            document.getElementById("gatekeeper").style.display = "none";
-        } else {
-            alert("Wrong code.");
-        }
-    }
-</script>
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>snake game</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nokia 3310 Snake</title>
   <style>
-      
-body {
-        background: rgb(212, 211, 211);
-      }      
-.grid {
-        width: 200px;
-        height: 200px;
-        border: 1px solid red;
-        margin: 0 auto;
-        display: flex;
-        flex-wrap: wrap;
-      }
-      .grid div {
-        width: 20px;
-        height: 20px;
-        /*border:1px black solid;
-box-sizing:border-box*/
-      }
-      .snake {
-        background: blue;
-      }
-      .apple {
-        background: yellow;
-        border-radius: 20px;
-      }
-      .popup {
-        background: rgb(32, 31, 31);
-        width: 100px;
-        height: 100px;
-        position: fixed;
-        top: 100px;
-        left: 100px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-  </style>
+    :root { --bg:#d4d3d3; --grid-border:#c00; --snake:#0074D9; --apple:#ffb400; --overlay-bg:rgba(0,0,0,0.95); }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: #111;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      min-height: 100vh;
+      padding: 24px;
+      box-sizing: border-box;
+    }
 
+    h1 { margin: 0; font-size: 1.25rem; text-transform:capitalize; }
+    .scoreDisplay { font-weight:600; }
+
+    .grid {
+      width: 200px;
+      height: 200px;
+      border: 1px solid var(--grid-border);
+      display: flex;
+      flex-wrap: wrap;
+      background: #fff;
+    }
+    .grid div { width: 20px; height: 20px; box-sizing: border-box; }
+    .snake { background: var(--snake); }
+    .apple { background: var(--apple); border-radius: 50%; }
+
+    .controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:8px; }
+    .controls button { padding:8px 12px; border-radius:6px; border:1px solid #999; background:#fff; cursor:pointer; }
+
+    .popup {
+      display:none;
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      background:#202020;
+      color:#fff;
+      padding:18px;
+      border-radius:8px;
+      min-width:180px;
+      text-align:center;
+      box-shadow:0 6px 18px rgba(0,0,0,.5);
+      z-index:2000;
+    }
+    .popup button { margin-top:10px; }
+
+    /* Gatekeeper overlay (client-side "password") */
+    #gatekeeper {
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:var(--overlay-bg);
+      color:white;
+      z-index:9999;
+      flex-direction:column;
+      gap:12px;
+    }
+    #gatekeeper .panel {
+      background:transparent;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    #passInput {
+      padding:8px;
+      border-radius:6px;
+      border:1px solid #666;
+    }
+    @media (max-width:420px){
+      .grid { width:240px; height:240px; }
+      .grid div { width:24px; height:24px; }
+    }
+  </style>
 </head>
 <body>
-    <h1>Nokia 3310 snake</h1>
-    <div class="scoreDisplay"></div>
-    <div class="grid"></div>
-    <div class="button">
-        <button class="top">top</button>
-        <button class="bottom">bottom</button>
-        <button class="left">left</button>
-        <button class="right">right</button>
+  <div id="gatekeeper" role="dialog" aria-modal="true" aria-label="Private access overlay">
+    <h1 style="margin:0 0 8px 0;">PRIVATE ACCESS</h1>
+    <div class="panel">
+      <input id="passInput" type="password" placeholder="Enter Code" aria-label="Enter access code">
+      <button id="enterBtn">ENTER</button>
     </div>
-    <div class="popup">
-        <button class="playAgain">play Again</button>
-    </div>
+    <div style="font-size:0.85rem; opacity:0.9; margin-top:8px;">This is client-side. Keep playing if you know the code.</div>
+  </div>
 
-    <script>
-        let grid = document.querySelector(".grid") 
-let popup = document.querySelector(".popup"); 
-let playAgain = document.querySelector(".playAgain"); 
-let scoreDisplay = document.querySelector(".scoreDisplay") 
-let left = document.querySelector(".left") 
-let bottom = document.querySelector(".bottom") 
-let right = document.querySelector(".right") 
-let up = document.querySelector(".top") 
-let width=10; 
-let currentIndex = 0 
-let appleIndex=0 
-let currentSnake=[2,1,0] 
-let direction =1 
-let score = 0 
-let speed = 0.8 
-let intervalTime =0 
-let interval =0
+  <h1>Nokia 3310 snake</h1>
+  <div class="scoreDisplay" aria-live="polite">Score: 0</div>
 
-document.addEventListener("DOMContentLoaded",function(){ 
-document.addEventListener("keyup",control) 
-createBoard() 
-startGame() 
-playAgain.addEventListener("click", replay); 
-})
+  <div class="grid" aria-hidden="false"></div>
 
-//createboard function
-function createBoard(){ 
-popup.style.display = "none"; 
-for(let i=0;i<100;i++){
-let div =document.createElement("div") 
-grid.appendChild(div) 
-}
-} 
+  <div class="controls" aria-hidden="false">
+    <button class="top" aria-label="Up">↑</button>
+    <button class="left" aria-label="Left">←</button>
+    <button class="right" aria-label="Right">→</button>
+    <button class="bottom" aria-label="Down">↓</button>
+  </div>
 
-//startgame function
-function startGame(){ 
-let squares =document.querySelectorAll(".grid div") 
-randomApple(squares) 
-//random apple 
-direction =1 
-scoreDisplay.innerHTML=score 
-intervalTime=1000 
-currentSnake =[2,1,0] 
-currentIndex = 0 
-currentSnake.forEach(index=>squares[index].classList.add("snake")) 
-interval = setInterval(moveOutcome,intervalTime) 
-} 
+  <div class="popup" role="dialog" aria-modal="true" id="gameOverPopup">
+    <div id="gameOverText" style="font-weight:700;">Game Over</div>
+    <div id="finalScore">Score: 0</div>
+    <button class="playAgain">Play Again</button>
+  </div>
 
-function moveOutcome (){ 
-let squares =document.querySelectorAll(".grid div") 
-if(checkForHits(squares)){
-alert("you hit something") 
-popup.style.display="flex" 
-return clearInterval(interval) 
-}else{ 
-moveSnake(squares) 
-}
-} 
+  <script>
+    // --- Gatekeeper (client-side) ---
+    (function(){
+      const gate = document.getElementById('gatekeeper');
+      const input = document.getElementById('passInput');
+      const enterBtn = document.getElementById('enterBtn');
+      const CODE = "YOURCODEHERE"; // change if you want a different code
 
-function moveSnake(squares){
-let tail = currentSnake.pop() 
-squares[tail].classList.remove("snake") 
-currentSnake.unshift(currentSnake[0]+direction)  
-// movement ends here  
-eatApple(squares,tail)  
-squares[currentSnake[0]].classList.add("snake")  
-}
+      function checkPass() {
+        if (input.value === CODE) {
+          gate.style.display = 'none';
+        } else {
+          // keep it simple: shake input or focus back
+          input.value = '';
+          input.focus();
+        }
+      }
+      enterBtn.addEventListener('click', checkPass);
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') checkPass();
+      });
+      // optionally autofocus
+      input.focus();
+    })();
 
-function checkForHits(squares){  
-if(  
-(currentSnake[0] + width >=(width*width) && direction === width) ||
-(currentSnake[0] % width ===width -1 && direction ===1) ||   
-(currentSnake[0] % width === 0 && direction === -1) ||   
-(currentSnake[0] - width <= 0 && direction === -width) ||
-squares[currentSnake[0] + direction].classList.contains("snake")   
-){ 
-return true  
-}else{  
-return false 
-}
-}  
+    // --- Snake game ---
+    (function(){
+      const gridEl = document.querySelector('.grid');
+      const scoreDisplay = document.querySelector('.scoreDisplay');
+      const popup = document.getElementById('gameOverPopup');
+      const finalScore = document.getElementById('finalScore');
+      const playAgainBtn = document.querySelector('.playAgain');
 
-function eatApple(squares,tail){ 
-if(squares[currentSnake[0]].classList.contains("apple")){ 
-squares[currentSnake[0]].classList.remove("apple") 
-squares[tail].classList.add("snake") 
-currentSnake.push(tail)
-randomApple(squares) 
-score++ 
-scoreDisplay.textContent = score 
-clearInterval(interval) 
-intervalTime = intervalTime *speed 
-interval = setInterval(moveOutcome,intervalTime) 
-}
-} 
+      const btnUp = document.querySelector('.top');
+      const btnLeft = document.querySelector('.left');
+      const btnRight = document.querySelector('.right');
+      const btnDown = document.querySelector('.bottom');
 
-function randomApple(squares){ 
-do{ 
-appleIndex =Math.floor(Math.random() * squares.length) 
-}while(squares[appleIndex].classList.contains("snake")) 
-squares[appleIndex].classList.add("apple") 
-} 
+      const width = 10;
+      const totalSquares = width * width;
+      let squares = [];
+      let currentSnake = [2,1,0];
+      let direction = 1; // +1 right, -1 left, +width down, -width up
+      let appleIndex = 0;
+      let score = 0;
+      let speed = 0.9; // multiplier
+      let intervalTime = 1000;
+      let intervalId = null;
 
-function control(e){ 
-if (e.keycode===39){
-direction = 1 // right 
-}else if (e.keycode===38){ 
-direction = -width //if we press the up arrow, the snake will go ten divs up
-}else if (e.keycode===37){ 
-direction = -1 // left, the snake will go left one div
-}else if (e.keycode===40){
-direction = +width // down the snake head will instantly appear 10 divs below from the current div 
-} 
-} 
+      function createBoard(){
+        gridEl.innerHTML = '';
+        squares = [];
+        for (let i = 0; i < totalSquares; i++){
+          const cell = document.createElement('div');
+          gridEl.appendChild(cell);
+          squares.push(cell);
+        }
+      }
 
-up.addEventListener("click",()=>direction= -width ) 
-bottom.addEventListener("click",()=>direction= +width ) 
-left.addEventListener("click",()=>direction= -1 ) 
-right.addEventListener("click",()=>direction= 1 )
+      function startGame(){
+        // clear previous
+        clearInterval(intervalId);
+        squares.forEach(sq => sq.className = '');
+        currentSnake = [2,1,0];
+        direction = 1;
+        score = 0;
+        intervalTime = 500;
+        scoreDisplay.textContent = 'Score: ' + score;
+        popup.style.display = 'none';
 
- function replay() { 
- grid.innerHTML="" 
- createBoard()  
- startGame()  
- popup.style.display = "none"; 
- }  
-    </script>
+        // draw snake
+        currentSnake.forEach(i => squares[i].classList.add('snake'));
+
+        // place apple
+        randomApple();
+
+        intervalId = setInterval(moveOutcome, intervalTime);
+      }
+
+      function moveOutcome(){
+        if (checkForHits()) {
+          gameOver();
+          return;
+        }
+        moveSnake();
+      }
+
+      function moveSnake(){
+        const tail = currentSnake.pop();
+        squares[tail].classList.remove('snake');
+
+        const newHead = currentSnake[0] + direction;
+        currentSnake.unshift(newHead);
+
+        // eat apple?
+        if (squares[newHead].classList.contains('apple')) {
+          squares[newHead].classList.remove('apple');
+          // restore tail so snake grows
+          currentSnake.push(tail);
+          squares[tail].classList.add('snake');
+          score++;
+          scoreDisplay.textContent = 'Score: ' + score;
+          clearInterval(intervalId);
+          intervalTime = Math.max(60, Math.floor(intervalTime * speed));
+          intervalId = setInterval(moveOutcome, intervalTime);
+          randomApple();
+        }
+
+        squares[currentSnake[0]].classList.add('snake');
+      }
+
+      function checkForHits(){
+        const head = currentSnake[0];
+        const nextIndex = head + direction;
+
+        // out of bounds vertically
+        if (nextIndex < 0 || nextIndex >= totalSquares) return true;
+
+        // left/right wrapping checks
+        if (direction === 1 && head % width === width - 1) return true;
+        if (direction === -1 && head % width === 0) return true;
+
+        // hitting itself
+        if (squares[nextIndex].classList.contains('snake')) return true;
+
+        return false;
+      }
+
+      function randomApple(){
+        // remove any existing apple
+        squares.forEach(sq => sq.classList.remove('apple'));
+        do {
+          appleIndex = Math.floor(Math.random() * totalSquares);
+        } while (squares[appleIndex].classList.contains('snake'));
+        squares[appleIndex].classList.add('apple');
+      }
+
+      function gameOver(){
+        clearInterval(intervalId);
+        finalScore.textContent = 'Score: ' + score;
+        popup.style.display = 'block';
+      }
+
+      // Controls
+      function setDirection(newDir){
+        // prevent reversing directly into itself
+        if (newDir === -direction) return;
+        direction = newDir;
+      }
+
+      function handleKey(e){
+        switch (e.key) {
+          case 'ArrowRight': setDirection(1); break;
+          case 'ArrowLeft': setDirection(-1); break;
+          case 'ArrowUp': setDirection(-width); break;
+          case 'ArrowDown': setDirection(width); break;
+        }
+      }
+
+      // attach listeners
+      document.addEventListener('keydown', handleKey);
+      btnUp.addEventListener('click', () => setDirection(-width));
+      btnDown.addEventListener('click', () => setDirection(width));
+      btnLeft.addEventListener('click', () => setDirection(-1));
+      btnRight.addEventListener('click', () => setDirection(1));
+
+      playAgainBtn.addEventListener('click', startGame);
+
+      // initialize
+      createBoard();
+      startGame();
+    })();
+  </script>
 </body>
 </html>
